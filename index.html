@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>放射科預假單系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 基本樣式 */
+        body {
+            font-family: 'Inter', sans-serif; /* 使用 Inter 字體 */
+            margin: 0; /* 移除預設邊距 */
+            padding: 1.5rem; /* 在 body 周圍添加內邊距 */
+            background-color: #f3f4f6; /* 設定淺灰色背景 */
+            color: #1f2937; /* 設定預設文字顏色 */
+            min-height: 100vh; /* 確保 body 至少和視窗一樣高 */
+            box-sizing: border-box; /* 確保 padding 和 border 不會增加元素總寬高 */
+        }
+        /* 主要容器 */
+        .main-container {
+            max-width: 1280px; /* 設定最大寬度 */
+            margin-left: auto; /* 水平居中 */
+            margin-right: auto; /* 水平居中 */
+        }
+        /* 日期標頭 */
+        .date-header {
+            width: 90px; /* 固定寬度 */
+            min-width: 90px; /* 最小寬度 */
+            overflow: hidden; /* 隱藏超出內容 */
+            white-space: nowrap; /* 不換行 */
+            text-align: center; /* 文字居中 */
+            padding: 0.375rem 0; /* 上下內邊距 */
+            border-bottom: 1px solid #e5e7eb; /* 底部邊框 */
+            font-size: 0.8rem; /* 字體大小 */
+            vertical-align: top; /* 垂直對齊頂部 */
+        }
+        /* 姓名標頭 */
+        .name-header {
+            width: 100px; /* 固定寬度 */
+            min-width: 100px; /* 最小寬度 */
+            text-align: left; /* 文字靠左 */
+            padding: 0.5rem; /* 內邊距 */
+            border-bottom: 1px solid #e5e7eb; /* 底部邊框 */
+        }
+        /* 順位標頭 */
+        .order-header {
+            width: 50px; /* 固定寬度 */
+            min-width: 50px; /* 最小寬度 */
+            text-align: center; /* 文字居中 */
+            padding: 0.5rem; /* 內邊距 */
+            border-bottom: 1px solid #e5e7eb; /* 底部邊框 */
+        }
+        /* 資料儲存格 */
+        .data-cell {
+            width: 90px; /* 固定寬度 */
+            height: 36px; /* 固定高度 */
+            text-align: center; /* 文字居中 */
+            border-bottom: 1px solid #f3f4f6; /* 底部邊框 */
+            padding: 0; /* 無內邊距 */
+            cursor: pointer; /* 滑鼠指標為手形 */
+            position: relative; /* 相對定位，供彈出視窗使用 */
+        }
+        /* 姓名儲存格 */
+        .name-cell {
+            text-align: left; /* 文字靠左 */
+            padding-left: 0.5rem; /* 左內邊距 */
+            font-weight: 500; /* 字體粗細 */
+            border-bottom: 1px solid #f3f4f6; /* 底部邊框 */
+            height: 36px; /* 固定高度 */
+            line-height: 36px; /* 行高使其垂直居中 */
+        }
+        /* 順位儲存格 */
+        .order-cell {
+            text-align: center; /* 文字居中 */
+            border-bottom: 1px solid #f3f4f6; /* 底部邊框 */
+            height: 36px; /* 固定高度 */
+            line-height: 36px; /* 行高使其垂直居中 */
+            cursor: pointer; /* 滑鼠指標為手形 */
+        }
+        /* 被選中交換的順位儲存格 */
+        .order-cell-selected {
+            background-color: #fef08a; /* 淡黃色背景 */
+            font-weight: bold; /* 粗體 */
+        }
+        /* 週末儲存格 */
+        .weekend { background-color: #f9fafb; } /* 非常淺的灰色背景 */
+        /* 假日儲存格 */
+        .holiday { background-color: #fffbeb; border: 1px dashed #facc15; } /* 淡黃色背景和虛線邊框 */
+        /* 假日名稱 */
+        .holiday-name {
+            display: block; /* 塊級元素 */
+            font-size: 0.65rem; /* 字體大小 */
+            color: #d97706; /* 橘黃色文字 */
+            margin-top: 2px; /* 頂部外邊距 */
+            white-space: normal; /* 允許換行 */
+        }
+        /* 預假單容器 */
+        .leave-form-container {
+            margin-bottom: 30px; /* 底部外邊距 */
+            padding: 15px; /* 內邊距 */
+            border: 1px solid #e5e7eb; /* 邊框 */
+            border-radius: 8px; /* 圓角 */
+            background-color: white; /* 白色背景 */
+            overflow-x: auto; /* 水平方向內容超出時顯示滾動條 */
+        }
+        /* 表單標題 */
+        .form-title {
+            font-size: 1.1rem; /* 字體大小 */
+            font-weight: 600; /* 字體粗細 */
+            margin-bottom: 10px; /* 底部外邊距 */
+            color: #374151; /* 深灰色文字 */
+        }
+        /* 休假標記顯示 */
+        .leave-mark-display {
+            color: white; /* 白色文字 */
+            font-weight: bold; /* 粗體 */
+            border-radius: 4px; /* 圓角 */
+            width: 80%; /* 寬度 */
+            height: 80%; /* 高度 */
+            margin: auto; /* 水平居中 */
+            display: flex; /* 使用 flex 佈局 */
+            align-items: center; /* 垂直居中 */
+            justify-content: center; /* 水平居中 */
+            font-size: 0.9rem; /* 字體大小 */
+        }
+        /* 各類休假標記顏色 */
+        .leave-mark-G { background-color: #f472b6; } /* 一般假 - 粉紅色 */
+        .leave-mark-A { background-color: #60a5fa; } /* 年休 - 藍色 */
+        .leave-mark-C { background-color: #34d399; } /* 補休 - 綠色 */
+
+        /* 休假類型彈出視窗 */
+        .leave-type-popover {
+            position: absolute; /* 絕對定位 */
+            background-color: white; /* 白色背景 */
+            border: 1px solid #cbd5e1; /* 邊框 */
+            border-radius: 6px; /* 圓角 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* 陰影 */
+            padding: 8px; /* 內邊距 */
+            z-index: 1000; /* 確保在最上層 */
+            display: flex; /* 使用 flex 佈局 */
+            flex-direction: column; /* 垂直排列 */
+            gap: 4px; /* 按鈕間距 */
+            min-width: 100px; /* 最小寬度 */
+        }
+        /* 彈出視窗中的按鈕 */
+        .leave-type-popover button {
+            padding: 6px 10px; /* 內邊距 */
+            border: 1px solid transparent; /* 透明邊框 */
+            border-radius: 4px; /* 圓角 */
+            text-align: left; /* 文字靠左 */
+            cursor: pointer; /* 滑鼠指標為手形 */
+            font-size: 0.875rem; /* 字體大小 */
+            background-color: #f9fafb; /* 非常淺的灰色背景 */
+            transition: background-color 0.2s, border-color 0.2s; /* 過渡效果 */
+            color: #374151; /* 深灰色文字 */
+        }
+        /* 彈出視窗按鈕滑鼠懸停效果 */
+        .leave-type-popover button:hover {
+            background-color: #f3f4f6; /* 淺灰色背景 */
+            border-color: #e5e7eb; /* 邊框顏色 */
+        }
+        /* 彈出視窗中帶有顏色的休假類型按鈕 */
+        .leave-type-popover button.popover-leave-type-btn {
+            color: white; /* 白色文字 */
+        }
+        /* 彈出視窗中的清除按鈕 */
+        .leave-type-popover button.popover-clear-btn {
+            background-color: #e5e7eb; /* 灰色背景 */
+        }
+        /* 清除按鈕滑鼠懸停效果 */
+        .leave-type-popover button.popover-clear-btn:hover {
+            background-color: #d1d5db; /* 深一點的灰色背景 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="main-container mx-auto max-w-full lg:max-w-7xl">
+        <h1 class="text-2xl font-semibold text-center text-gray-800 mb-6">放射科預假單系統</h1>
+        <p id="main-instruction" class="text-gray-600 text-sm mb-4 text-center">
+            </p>
+        <p class="text-gray-500 text-xs mb-4 text-center">（註：假日列表為2025年台灣國定假日參考，實際標示依各表單日期範圍為準。）</p>
+
+        <div id="leave-forms-container">
+            </div>
+    </div>
+
+    <script>
+        // DOM 元素獲取
+        const leaveFormsContainer = document.getElementById('leave-forms-container');
+        const mainInstruction = document.getElementById('main-instruction');
+
+        // --- 全域設定 ---
+        const today = new Date(); // 當前日期
+        today.setFullYear(2025, 4, 20); // 設定為 2025年5月20日，方便測試，實際部署時應使用真實日期
+        today.setHours(0, 0, 0, 0); // 將時間設為午夜，方便日期比較
+
+        const appCurrentYear = today.getFullYear(); // 當前年份，用於假日判斷
+        const initialGlobalStartDate = new Date(appCurrentYear, 5, 9); // 系統預設的第一個表單起始日期 (2025年6月9日)
+
+        const numberOfDaysPerForm = 28; // 每個表單顯示的天數 (4週)
+        const numberOfFormsToAttempt = 5; // 嘗試生成的表單數量上限
+
+        // 員工資料，包含姓名和基礎順位
+        // 員工在 employees 陣列中的順序決定了表格中行的固定順序。
+        // `order` 屬性代表他們在第一份有效表單中的基礎順位。
+        let employees = [
+            { name: "陳振堅", order: 1 }, { name: "莊憶如", order: 2 }, { name: "朱雁翎", order: 3 },
+            { name: "曾紹華", order: 4 }, { name: "李國偉", order: 5 }, { name: "洪藝瑄", order: 6 },
+            { name: "高元宏", order: 7 }, { name: "傅奎愿", order: 8 }, { name: "陳盈熹", order: 9 },
+            { name: "蔡芳綺", order: 10 }, { name: "李宛融", order: 11 }, { name: "徐啟仁", order: 12 },
+            { name: "鄭璟樺", order: 13 },
+        ];
+
+        // 設定主要說明文字
+        const startDateTextForInstruction = initialGlobalStartDate.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (mainInstruction) {
+            mainInstruction.innerHTML = `
+                系統將顯示最多${numberOfFormsToAttempt}份連續的28天預假單。首份預計起始日期為：<span id="initial-start-date-display" class="font-bold">${startDateTextForInstruction}</span>。
+                <br>點擊儲存格可選擇休假類型 <span class="font-bold text-gray-700">(般: 一般假, 年: 年休, 補: 補休)</span>。
+                <br>在最近的兩份表單中，可點擊「順位」欄中的數字交換員工的基礎順位號碼 (員工行位置不變，後續表單順位將自動遞增)。並可「儲存目前順位」供下次使用。
+                <br>點擊各表單的「儲存此表單修改」按鈕，可以儲存該表單的休假紀錄。
+                <br><span class="text-xs text-red-600">注意：根據規則，起始日期早於「今天」的表單（已過期）將不會顯示。</span>`;
+        }
+
+        // 休假類型定義
+        const leaveTypes = [
+            { code: '般', name: '一般假', color: '#f472b6', className: 'leave-mark-G' }, // 一般假
+            { code: '年', name: '年休',   color: '#60a5fa', className: 'leave-mark-A' }, // 年休
+            { code: '補', name: '補休',   color: '#34d399', className: 'leave-mark-C' }  // 補休
+        ];
+
+        // 全域變數，用於管理彈出視窗和順位交換
+        let currentPopover = null;    // 目前活動的彈出視窗元素
+        let popoverTargetCell = null; // 彈出視窗所針對的儲存格
+        let firstSelectedForSwap = null; // 順位交換中第一個被選中的員工資訊
+
+        // 2025年台灣國定假日參考 (注意：實際假日應依官方公告為準)
+        const holidaysWithNames = [
+            { date: `${appCurrentYear}-01-01`, name: "元旦" },
+            { date: `${appCurrentYear}-01-28`, name: "除夕" },
+            { date: `${appCurrentYear}-01-29`, name: "春節" },
+            { date: `${appCurrentYear}-01-30`, name: "春節" },
+            { date: `${appCurrentYear}-01-31`, name: "春節" },
+            { date: `${appCurrentYear}-02-28`, name: "和平紀念日" },
+            { date: `${appCurrentYear}-04-04`, name: "兒童節/清明節" },
+            { date: `${appCurrentYear}-05-01`, name: "勞動節" },
+            { date: `${appCurrentYear}-05-30`, name: "端午節(補假)" }, // 假設
+            { date: `${appCurrentYear}-05-31`, name: "端午節" },
+            { date: `${appCurrentYear}-10-06`, name: "中秋節" }, // 假設，實際日期每年不同
+            { date: `${appCurrentYear}-10-10`, name: "國慶日" }
+        ];
+
+        /**
+         * 取得表單的唯一識別碼 (基於起始日期)
+         * @param {Date} formStartDate - 表單的起始日期物件
+         * @returns {string} 表單的唯一識別碼，格式為 "YYYY-MM-DD"
+         */
+        function getFormIdentifier(formStartDate) {
+            const year = formStartDate.getFullYear();
+            const month = String(formStartDate.getMonth() + 1).padStart(2, '0'); // 月份從0開始，所以+1
+            const day = String(formStartDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`; // 使用 YYYY-MM-DD 格式作為唯一標識符
+        }
+
+        /**
+         * 儲存指定表單的休假資料到 localStorage
+         * @param {HTMLElement} formElement - 表單的 DOM 元素
+         * @param {string} formIdentifier - 表單的唯一識別碼
+         */
+        function saveFormLeaveData(formElement, formIdentifier) {
+            const leaveData = []; // 用於儲存該表單的休假資料
+            const rows = formElement.querySelectorAll('tbody tr'); // 獲取表格的所有行
+
+            rows.forEach(row => {
+                const nameCell = row.querySelector('.name-cell');
+                if (!nameCell) return; // 如果找不到姓名儲存格，則跳過此行
+                const employeeName = nameCell.textContent.trim(); // 獲取員工姓名
+
+                const dataCells = row.querySelectorAll('.data-cell'); // 獲取該行的所有日期儲存格
+                dataCells.forEach(cell => {
+                    if (cell.dataset.selectedLeave) { // 如果儲存格有已選的休假類型
+                        leaveData.push({
+                            employeeName: employeeName,
+                            date: cell.dataset.date, // 儲存格對應的日期
+                            leaveCode: cell.dataset.selectedLeave // 儲存格選中的休假代碼
+                        });
+                    }
+                });
+            });
+
+            try {
+                localStorage.setItem(`radiologyLeaveData_${formIdentifier}`, JSON.stringify(leaveData));
+                alert(`表單 (起始日: ${formIdentifier}) 的休假修改已儲存！`);
+                console.log(`表單 ${formIdentifier} 的休假資料已儲存:`, leaveData);
+            } catch (e) {
+                console.error(`儲存表單 ${formIdentifier} 的休假資料到 localStorage 失敗:`, e);
+                alert(`儲存表單 ${formIdentifier} 的休假資料失敗，請檢查瀏覽器設定。`);
+            }
+        }
+
+        /**
+         * 從 localStorage 載入並應用指定表單的休假資料
+         * @param {HTMLElement} formElement - 表單的 DOM 元素
+         * @param {string} formIdentifier - 表單的唯一識別碼
+         */
+        function loadFormLeaveData(formElement, formIdentifier) {
+            const savedDataJSON = localStorage.getItem(`radiologyLeaveData_${formIdentifier}`);
+            if (!savedDataJSON) return; // 如果沒有儲存的資料，則直接返回
+
+            try {
+                const savedLeaveData = JSON.parse(savedDataJSON);
+                savedLeaveData.forEach(item => {
+                    const rows = formElement.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const nameCell = row.querySelector('.name-cell');
+                        if (nameCell && nameCell.textContent.trim() === item.employeeName) { // 找到對應員工的行
+                            const targetCell = row.querySelector(`.data-cell[data-date="${item.date}"]`); // 找到對應日期的儲存格
+                            if (targetCell) {
+                                const leaveType = leaveTypes.find(lt => lt.code === item.leaveCode); // 找到對應的休假類型定義
+                                if (leaveType) {
+                                    targetCell.innerHTML = ''; // 清除現有內容
+                                    const leaveMarkDiv = document.createElement('div');
+                                    leaveMarkDiv.className = 'leave-mark-display ' + leaveType.className;
+                                    leaveMarkDiv.textContent = leaveType.code;
+                                    targetCell.appendChild(leaveMarkDiv);
+                                    targetCell.dataset.selectedLeave = item.leaveCode; // 設定已選休假
+                                }
+                            }
+                        }
+                    });
+                });
+                console.log(`表單 ${formIdentifier} 的休假資料已從 localStorage 載入。`);
+            } catch (e) {
+                console.error(`從 localStorage 載入表單 ${formIdentifier} 的休假資料失敗:`, e);
+            }
+        }
+
+
+        /**
+         * 從 localStorage 載入員工的基礎順位
+         */
+        function loadEmployeeOrder() {
+            const savedOrderJSON = localStorage.getItem('radiologyEmployeeOrder');
+            if (savedOrderJSON) {
+                try {
+                    const savedOrders = JSON.parse(savedOrderJSON);
+                    employees.forEach(employee => {
+                        const savedData = savedOrders.find(s => s.name === employee.name);
+                        if (savedData && typeof savedData.order === 'number') {
+                            employee.order = savedData.order; // 載入的是基礎順位
+                        }
+                    });
+                    console.log("員工基礎順位已從 localStorage 載入。");
+                } catch (e) {
+                    console.error("從 localStorage 載入員工基礎順位失敗:", e);
+                }
+            }
+        }
+
+        /**
+         * 將目前員工的基礎順位儲存到 localStorage
+         */
+        function saveEmployeeOrder() {
+            const orderToSave = employees.map(emp => ({ name: emp.name, order: emp.order })); // 只儲存姓名和基礎順位
+            try {
+                localStorage.setItem('radiologyEmployeeOrder', JSON.stringify(orderToSave));
+                alert('員工基礎順位已成功儲存！');
+                console.log("員工基礎順位已儲存到 localStorage:", orderToSave);
+            } catch (e) {
+                console.error("儲存員工基礎順位到 localStorage 失敗:", e);
+                alert('儲存員工基礎順位失敗，請檢查瀏覽器設定。');
+            }
+        }
+
+        /**
+         * 產生指定表單的日期陣列
+         * @param {Date} formStartDate - 表單的起始日期
+         * @param {number} numDays - 表單包含的天數
+         * @returns {Date[]} 日期物件的陣列
+         */
+        function generateDatesForForm(formStartDate, numDays) {
+            const datesArray = [];
+            for (let i = 0; i < numDays; i++) {
+                const date = new Date(formStartDate);
+                date.setDate(formStartDate.getDate() + i);
+                datesArray.push(date);
+            }
+            return datesArray;
+        }
+
+        /**
+         * 產生表單的日期標頭 HTML
+         * @param {Date[]} currentFormDates - 表單的日期陣列
+         * @returns {string} 日期標頭的 HTML 字串
+         */
+        function createDateHeadersHTML(currentFormDates) {
+            let headerContent = `<table class="min-w-full table-fixed">
+                <thead>
+                    <tr>
+                        <th class="name-header">姓名</th>
+                        <th class="order-header">順位</th>`;
+            currentFormDates.forEach(date => {
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const year = date.getFullYear();
+                const displayDate = `${month}/${day}`; // 顯示格式 MM/DD
+                const dayOfWeek = date.toLocaleDateString('zh-TW', { weekday: 'short' }); // 星期幾 (短格式)
+                let cellClass = ""; // 儲存格的 CSS class
+                let holidayNameHTML = ""; // 假日名稱的 HTML
+                const dateKey = `${year}-${month}-${day}`; // 用於比對假日的鍵值 YYYY-MM-DD
+
+                // 標記週末
+                if (date.getDay() === 0 || date.getDay() === 6) cellClass += " weekend";
+
+                // 標記國定假日
+                const holidayInfo = holidaysWithNames.find(h => h.date === dateKey);
+                if (holidayInfo) {
+                    cellClass += " holiday";
+                    holidayNameHTML = `<span class="holiday-name">${holidayInfo.name}</span>`;
+                }
+                headerContent += `<th class="date-header${cellClass}">
+                                    ${displayDate}<br><span class="text-xs">(${dayOfWeek})</span>${holidayNameHTML}
+                                  </th>`;
+            });
+            headerContent += `</tr></thead>`;
+            return headerContent;
+        }
+
+        /**
+         * 關閉目前活動的休假類型彈出視窗
+         */
+        function closeActivePopover() {
+            if (currentPopover) {
+                currentPopover.remove();
+                currentPopover = null;
+                popoverTargetCell = null;
+            }
+        }
+
+        /**
+         * 處理順位儲存格的點擊事件，用於交換員工的基礎順位
+         * @param {string} employeeName - 被點擊順位儲存格對應的員工姓名
+         * @param {HTMLElement} clickedCell - 被點擊的順位儲存格元素
+         */
+        function handleOrderCellClickForSwap(employeeName, clickedCell) {
+            const employeeData = employees.find(emp => emp.name === employeeName);
+            if (!employeeData) return; // 找不到員工資料則返回
+
+            if (!firstSelectedForSwap) { // 如果是第一次選擇
+                firstSelectedForSwap = {
+                    name: employeeData.name,
+                    originalOrder: employeeData.order, // 儲存的是基礎順位
+                    cellElement: clickedCell
+                };
+                clickedCell.classList.add('order-cell-selected'); // 標記為已選
+                clickedCell.title = '再次點擊取消選擇，或點擊其他順位進行交換';
+                // 更新其他順位儲存格的 title 提示
+                document.querySelectorAll('.order-cell').forEach(oc => {
+                    if (oc !== clickedCell) {
+                        const otherEmpName = oc.closest('tr').querySelector('.name-cell').textContent;
+                        if (otherEmpName !== employeeData.name) {
+                             oc.title = `點擊與 ${employeeData.name} 交換基礎順位`;
+                        }
+                    }
+                });
+
+            } else { // 如果是第二次選擇 (進行交換)
+                document.querySelectorAll('.order-cell').forEach(oc => oc.title = '點擊選擇以交換基礎順位'); // 重置 title
+
+                if (firstSelectedForSwap.name === employeeData.name) { // 如果點擊同一個，取消選擇
+                    firstSelectedForSwap.cellElement.classList.remove('order-cell-selected');
+                    firstSelectedForSwap = null;
+                    return;
+                }
+
+                // 獲取第二個被選員工的資料
+                const secondEmployeeName = employeeData.name;
+                const secondEmployeeBaseOrder = employeeData.order; // 獲取的是基礎順位
+
+                // 獲取第一個被選員工的資料
+                const firstEmployeeName = firstSelectedForSwap.name;
+                const firstEmployeeBaseOrder = firstSelectedForSwap.originalOrder; // 獲取的是基礎順位
+
+                // 在 employees 陣列中找到這兩位員工的索引
+                const firstEmpIndex = employees.findIndex(emp => emp.name === firstEmployeeName);
+                const secondEmpIndex = employees.findIndex(emp => emp.name === secondEmployeeName);
+
+                if (firstEmpIndex !== -1 && secondEmpIndex !== -1) {
+                    // 交換基礎順位
+                    employees[firstEmpIndex].order = secondEmployeeBaseOrder;
+                    employees[secondEmpIndex].order = firstEmployeeBaseOrder;
+
+                    console.log(`基礎順位已交換: ${firstEmployeeName} (新基礎順位 ${secondEmployeeBaseOrder}) 與 ${secondEmployeeName} (新基礎順位 ${firstEmployeeBaseOrder})。員工行位置不變。`);
+                }
+
+                // 清除第一個選擇的標記
+                if (firstSelectedForSwap.cellElement) {
+                    firstSelectedForSwap.cellElement.classList.remove('order-cell-selected');
+                }
+                firstSelectedForSwap = null; // 重置選擇狀態
+                rerenderAllForms(); // 重新渲染所有表單以更新顯示的順位
+            }
+        }
+
+        /**
+         * 創建並顯示一個預假單
+         * @param {Date} formStartDate - 表單的起始日期
+         * @param {number} formIndex - 表單的索引 (0-based，相對於有效表單)
+         */
+        function createLeaveForm(formStartDate, formIndex) {
+            const formElement = document.createElement('div');
+            formElement.className = 'leave-form-container';
+            const formId = getFormIdentifier(formStartDate); // 獲取表單唯一標識
+
+            const currentFormDates = generateDatesForForm(formStartDate, numberOfDaysPerForm); // 產生該表單的日期
+
+            // 創建表單標題
+            const formTitleElement = document.createElement('h3');
+            formTitleElement.className = 'form-title';
+            const endDateOfThisForm = currentFormDates[currentFormDates.length - 1];
+            const startDateString = formStartDate.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            const endDateString = endDateOfThisForm.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            formTitleElement.textContent = `預假單 #${formIndex + 1} ( ${startDateString} - ${endDateString} )`;
+            formElement.appendChild(formTitleElement);
+
+            // 創建按鈕容器
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'mt-1 mb-3 flex items-center gap-3'; // Tailwind CSS classes for styling
+
+            // 只有前兩個表單可以修改和儲存順位
+            if (formIndex === 0 || formIndex === 1) {
+                const modifyOrderButton = document.createElement('button');
+                modifyOrderButton.textContent = '修改順位模式';
+                modifyOrderButton.className = 'px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300';
+                modifyOrderButton.title = '啟用後，點擊下方表格中的「順位」數字可進行交換。';
+                // modifyOrderButton.onclick = () => { /* 可以在此處添加切換模式的邏輯，例如提示用戶可以點擊順位 */ };
+                buttonContainer.appendChild(modifyOrderButton);
+
+                const saveOrderButton = document.createElement('button');
+                saveOrderButton.textContent = '儲存目前順位';
+                saveOrderButton.className = 'px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300';
+                saveOrderButton.onclick = saveEmployeeOrder; // 綁定儲存順位函數
+                buttonContainer.appendChild(saveOrderButton);
+            }
+
+            // 新增「儲存此表單修改」按鈕 (所有表單都有)
+            const saveFormButton = document.createElement('button');
+            saveFormButton.textContent = '儲存此表單修改';
+            saveFormButton.className = 'px-3 py-1.5 bg-purple-500 text-white text-xs rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300';
+            saveFormButton.onclick = function() {
+                saveFormLeaveData(formElement, formId); // 綁定儲存表單休假資料函數
+            };
+            buttonContainer.appendChild(saveFormButton);
+            formElement.insertBefore(buttonContainer, formTitleElement.nextSibling); // 將按鈕容器插入標題後
+
+
+            // 創建表格 HTML
+            let tableHTML = createDateHeadersHTML(currentFormDates); // 產生日期標頭
+            tableHTML += `<tbody>`;
+            employees.forEach(employee => {
+                // 計算並顯示遞增後的順位 (基礎順位 + 表單索引)
+                const displayedOrder = employee.order + formIndex;
+                tableHTML += `<tr>
+                                <td class="name-cell">${employee.name}</td>
+                                <td class="order-cell" title="點擊選擇以交換基礎順位">${displayedOrder}</td>`;
+                currentFormDates.forEach(date => {
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const year = date.getFullYear();
+                    const dateKey = `${year}-${month}-${day}`; // YYYY-MM-DD
+                    let cellClasses = "data-cell";
+                    if (date.getDay() === 0 || date.getDay() === 6) cellClasses += " weekend";
+                    if (holidaysWithNames.find(h => h.date === dateKey)) cellClasses += " holiday";
+                    tableHTML += `<td class="${cellClasses}" data-date="${dateKey}"></td>`; // data-date 用於儲存和識別
+                });
+                tableHTML += `</tr>`;
+            });
+            tableHTML += `</tbody></table>`;
+            const tableContainer = document.createElement('div'); // 臨時容器
+            tableContainer.innerHTML = tableHTML;
+            formElement.appendChild(tableContainer.firstChild); // 將表格添加到表單元素中
+            leaveFormsContainer.appendChild(formElement); // 將表單元素添加到主容器
+
+            // 載入此表單已儲存的休假資料
+            loadFormLeaveData(formElement, formId);
+
+
+            // 為順位儲存格綁定點擊事件 (用於交換順位)
+            const orderCells = formElement.querySelectorAll('.order-cell');
+            orderCells.forEach(cell => {
+                const row = cell.closest('tr');
+                const nameCell = row.querySelector('.name-cell');
+                if (nameCell) {
+                    const employeeName = nameCell.textContent.trim();
+                    cell.addEventListener('click', function() {
+                        // 只允許在前兩個表單中操作順位
+                        if (formIndex === 0 || formIndex === 1) {
+                            handleOrderCellClickForSwap(employeeName, this);
+                        } else {
+                            alert("只能在最近的兩份表單中修改順位。");
+                        }
+                    });
+                }
+            });
+
+            // 為日期儲存格綁定點擊事件 (用於選擇休假類型)
+            const dataCells = formElement.querySelectorAll('.data-cell');
+            dataCells.forEach(cell => {
+                cell.addEventListener('click', function (event) {
+                    event.stopPropagation(); // 防止事件冒泡到 document
+                    if (popoverTargetCell === this && currentPopover) { // 如果再次點擊同一個儲存格，則關閉彈出視窗
+                        closeActivePopover(); return;
+                    }
+                    closeActivePopover(); // 關閉任何已存在的彈出視窗
+                    popoverTargetCell = this; // 設定目前目標儲存格
+
+                    // 創建彈出視窗
+                    const popover = document.createElement('div');
+                    popover.className = 'leave-type-popover';
+
+                    // 添加休假類型按鈕
+                    leaveTypes.forEach(lt => {
+                        const btn = document.createElement('button');
+                        btn.textContent = lt.name;
+                        btn.dataset.leaveCode = lt.code;
+                        btn.dataset.leaveClassName = lt.className;
+                        btn.style.backgroundColor = lt.color; // 直接設定背景色
+                        btn.classList.add('popover-leave-type-btn');
+                        btn.onclick = function() {
+                            popoverTargetCell.innerHTML = ''; // 清除儲存格現有內容
+                            // 移除儲存格上可能存在的其他休假類型 class
+                            leaveTypes.forEach(type => popoverTargetCell.classList.remove(type.className));
+
+                            // 創建並添加休假標記
+                            const leaveMarkDiv = document.createElement('div');
+                            leaveMarkDiv.className = 'leave-mark-display ' + this.dataset.leaveClassName;
+                            leaveMarkDiv.textContent = this.dataset.leaveCode;
+                            popoverTargetCell.appendChild(leaveMarkDiv);
+                            popoverTargetCell.dataset.selectedLeave = this.dataset.leaveCode; // 儲存選擇的休假代碼
+                            closeActivePopover(); // 關閉彈出視窗
+                        };
+                        popover.appendChild(btn);
+                    });
+
+                    // 添加清除按鈕
+                    const clearBtn = document.createElement('button');
+                    clearBtn.textContent = '清除';
+                    clearBtn.classList.add('popover-clear-btn');
+                    clearBtn.onclick = function() {
+                        popoverTargetCell.innerHTML = ''; // 清除儲存格內容
+                        leaveTypes.forEach(type => popoverTargetCell.classList.remove(type.className));
+                        delete popoverTargetCell.dataset.selectedLeave; // 移除已選休假代碼
+                        closeActivePopover(); // 關閉彈出視窗
+                    };
+                    popover.appendChild(clearBtn);
+
+                    document.body.appendChild(popover); // 將彈出視窗添加到 body
+                    currentPopover = popover; // 設定為目前活動的彈出視窗
+
+                    // 計算並設定彈出視窗的位置
+                    const rect = this.getBoundingClientRect(); // 獲取目標儲存格的位置和大小
+                    let topPosition = rect.bottom + window.scrollY + 2; // 預設在儲存格下方
+                    let leftPosition = rect.left + window.scrollX;     // 預設與儲存格左對齊
+
+                    popover.style.top = `${topPosition}px`;
+                    popover.style.left = `${leftPosition}px`;
+
+                    // 邊界檢測，防止彈出視窗超出螢幕
+                    const popoverRect = popover.getBoundingClientRect();
+                    if (popoverRect.right > window.innerWidth - 10) { // 如果右邊超出
+                        popover.style.left = `${window.innerWidth - popoverRect.width - 10}px`;
+                    }
+                    if (popoverRect.left < 10) { // 如果左邊超出
+                        popover.style.left = '10px';
+                    }
+                    if (popoverRect.bottom > window.innerHeight - 10 ) { // 如果底部超出，則顯示在儲存格上方
+                         popover.style.top = `${rect.top + window.scrollY - popoverRect.height - 2}px`;
+                    }
+                     if (popoverRect.top < 10 && (rect.top + window.scrollY - popoverRect.height - 2) < 10 ) { // 如果上方也超出
+                        popover.style.top = '10px'; // 盡量顯示在頂部
+                    }
+                });
+            });
+        }
+
+        /**
+         * 重新渲染所有表單 (通常在順位交換後調用)
+         */
+        function rerenderAllForms() {
+            leaveFormsContainer.innerHTML = ''; // 清空現有表單
+            closeActivePopover(); // 關閉活動的彈出視窗
+            // 清除順位交換的選擇狀態
+            if (firstSelectedForSwap && firstSelectedForSwap.cellElement) {
+                 firstSelectedForSwap.cellElement.classList.remove('order-cell-selected');
+                 firstSelectedForSwap = null;
+            }
+            document.querySelectorAll('.order-cell').forEach(oc => oc.title = '點擊選擇以交換基礎順位'); // 重置 title
+            generateAndDisplayForms(); // 重新生成並顯示所有表單
+        }
+
+        /**
+         * 產生並顯示所有有效的預假單
+         */
+        function generateAndDisplayForms() {
+            let dateForNextForm = new Date(initialGlobalStartDate); // 從預設的全局起始日期開始
+            let validFormsCount = 0; // 已生成的有效表單數量
+
+            for (let slotIndex = 0; slotIndex < numberOfFormsToAttempt; slotIndex++) {
+                if (validFormsCount >= numberOfFormsToAttempt) { // 如果已達到最大表單數量，則停止
+                    break;
+                }
+
+                const potentialStartDate = new Date(dateForNextForm);
+                potentialStartDate.setHours(0, 0, 0, 0); // 標準化日期時間
+
+                // 檢查表單是否已過期 (起始日期早於今天)
+                if (potentialStartDate < today) {
+                    console.log(`表單起始日: ${potentialStartDate.toLocaleDateString('zh-TW')} 已過期，將被跳過。`);
+                    dateForNextForm.setDate(dateForNextForm.getDate() + numberOfDaysPerForm); // 計算下一個可能的起始日期
+                    continue; // 跳過此過期表單
+                }
+
+                // 創建並顯示表單
+                createLeaveForm(new Date(potentialStartDate), validFormsCount);
+                validFormsCount++; // 有效表單計數增加
+                dateForNextForm.setDate(dateForNextForm.getDate() + numberOfDaysPerForm); // 計算下一個表單的起始日期
+            }
+
+            // 如果沒有生成任何有效表單，則顯示提示訊息
+            if (validFormsCount === 0) {
+                const noFormsMessage = document.createElement('p');
+                noFormsMessage.className = 'text-center text-red-600 font-semibold py-4';
+                noFormsMessage.textContent = '根據目前設定與日期規則，沒有可顯示的預假單。';
+                leaveFormsContainer.appendChild(noFormsMessage);
+                // 在主要說明區域也添加警告
+                if (mainInstruction && !document.getElementById('no-forms-active-warning')) {
+                    const warningSpan = document.createElement('span');
+                    warningSpan.id = 'no-forms-active-warning';
+                    warningSpan.innerHTML = '<br><strong class="text-red-700">目前沒有表單可供填寫。</strong>';
+                    mainInstruction.appendChild(warningSpan);
+                }
+            } else {
+                 // 如果有表單，移除可能存在的 "無表單" 警告
+                 const existingWarning = document.getElementById('no-forms-active-warning');
+                 if (existingWarning) existingWarning.remove();
+            }
+        }
+
+        // --- 初始化 ---
+        loadEmployeeOrder(); // 載入已儲存的員工順位
+        generateAndDisplayForms(); // 產生並顯示初始表單
+
+        // 全域點擊事件監聽器，用於處理點擊外部區域關閉彈出視窗或取消順位交換
+        document.addEventListener('click', function(event) {
+            // 如果點擊的不是彈出視窗本身或其目標儲存格，則關閉彈出視窗
+            if (currentPopover && !currentPopover.contains(event.target) && popoverTargetCell && !popoverTargetCell.contains(event.target)) {
+                closeActivePopover();
+            }
+            // 如果已選擇一個順位進行交換，但點擊了表格外部且非按鈕區域，則取消選擇
+            if (firstSelectedForSwap && !event.target.closest('.order-cell') && !event.target.closest('button')) {
+                if (firstSelectedForSwap.cellElement) {
+                    firstSelectedForSwap.cellElement.classList.remove('order-cell-selected');
+                }
+                firstSelectedForSwap = null;
+                document.querySelectorAll('.order-cell').forEach(oc => oc.title = '點擊選擇以交換基礎順位');
+                console.log("順位交換選擇已取消 (點擊外部)。");
+            }
+        });
+    </script>
+</body>
+</html>
